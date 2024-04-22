@@ -19,11 +19,11 @@ $options = array(
 
 Cache::init($options);
 ```
-Note: You can initialize the cache only once in the program. Any later calls to init() will have no effect. If you need to re-initialize, remove 
+Note: You can initialize the cache only once in the program. Any later calls to init() will have no effect.
 
 Now you can store or retrieve data to and from cache like:
 
-```
+```php
 // Set value with default expiry
 Cache::set('name', 'John'); // "name" will be cached for one hour
 
@@ -78,7 +78,7 @@ You can also run it as `Cache::purge_expired(true);` to trigger writing the cach
 
 If for a reason you need to purge all the cache at once, you can do so like:
 
-```
+```php
 // Purge all cache and write an empty cache file at the end of runtime
 Cache::purge_all();
 
