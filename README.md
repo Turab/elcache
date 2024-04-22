@@ -123,7 +123,7 @@ No. Cached data is dependant only on the cache file and expiry time. So the cach
 
 ### What happens if cache file is deleted or corrupted by another process?
 
-There is no harm in that; but your cached data will be gone if it is deleted at a point where Elcache wasn't running and not updated during that time. So you had better not intere with the file manually or let other processes write to it. You should know what to do when a cached data is expired. It will just be considered expired.
+There is no harm in that; but your cached data will be gone if it is deleted at a point where Elcache wasn't running and not updated during that time. So you better not interfere with the file manually or let other processes write to it. You should know what to do when a cached data is expired. It will just be considered expired.
 
 ### Is this production ready?
 
