@@ -49,6 +49,23 @@ Cache::get('name'); // Returns the cached value if it's not expired
 Cache::get('name', true); // Returns [value, expiretime] // Expire time is timestamp, not the remaining seconds
 ```
 
+### What happens if a key is `set()` again, before it expired?
+
+Nothing special. It will be treated as if it is being cached for the first time. (I.e. resetting the expire time to the new value or revoke if the new value is null or the new expiry is lower than 1.) In this case, expiry is not inremental.
+
+```php
+Cache::set('name', 'John', 60); // Cache for 1 minute
+sleep(45); // It has 15 seconds left until it expires
+Cache::set('name', 'John', 60); // Now it has 1 minute again and NOT 60+15 = 75 seconds.
+```
+
+So if you need to prolong the cache time rather than resetting its expiry, just do it manually like:
+
+```php
+list($name, $expiry) = Cache::get('name', true);
+Cache::set('name', $name, 60 + $expiry); // Prolong the remaining cache expiry by 60 seconds.
+```
+
 ### Can I compare a value from the cache?
 
 ```php
@@ -123,7 +140,7 @@ No. Cached data is dependant only on the cache file and expiry time. So the cach
 
 ### What happens if cache file is deleted or corrupted by another process?
 
-There is no harm in that; but your cached data will be gone if it is deleted at a point where Elcache wasn't running and not updated during that time. So you better not interfere with the file manually or let other processes write to it. You should know what to do when a cached data is expired. It will just be considered expired.
+There is no harm in that; but your cached data will be gone if it is deleted at a point where Elcache wasn't running and not updated during that time. So you better not interfere with the file manually or let other processes write to it. You should know what to do when a cached data is expired. It will just be considered expired if the file is not there or it its content is corrupted.
 
 ### Is this production ready?
 
