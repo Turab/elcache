@@ -49,6 +49,22 @@ Cache::get('name'); // Returns the cached value if it's not expired
 Cache::get('name', true); // Returns [value, expiretime] // Expire time is timestamp, not the remaining seconds
 ```
 
+### Can I compare a value from the cache?
+
+```php
+// Check to see if the cached value matches the provided value
+// Check is loose and case-sensitive
+Cache::check('name', 'John'); // Returns true if the cached "name" is also John and is not expired; false otherwise.
+
+// To make a strict check (i.e. check also data type)
+Cache::check('age', 45, true); // It will return true only if cached age is 45 AND is integer. So "45" (string) will return false.
+
+// This is actually nothing more than a mere shorthand for:
+$cached_value = Cache::get('name');
+if ($cached_value == 'John') // Or $cached_value === 'John' for strict checking.
+  $check = true;
+```
+
 ### What can be stored in cache?
 
 Anything that is serializable by PHP can be stored in cache. It is best to use with scalar values only but you can also store full arrays in cache too.
@@ -63,6 +79,8 @@ Cache::set('user', $user);
 ```
 
 You can also store serializable objects in cache but it's not recommended if you really don't need it and if you really know what to expect from the object you want to cache. Because most of the objects are not serializable and this will make error handling a pain. Needless to say you cannot cache resources. (Like handlers, streams, database connections etc.)
+
+Since you can store non-scalar values like booleans for example, you should be careful when performing checks on data. For example if a key is stored boolean `false` but it expired, it will return `null` which can evaluate to `false` or integer `0` value would evaluate to `false` and may mislead you to cause wrong behaviour in your program. In these cases, always make a strict check. Furthermore, a `null` value cannot be stored in a key since it doesn't make sense as per this behaviour and setting `null` effectively runs revoking procedure for the given key.
 
 ### How to purge expired cache?
 
