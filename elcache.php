@@ -1,4 +1,9 @@
 <?php
+/*
+	Author: Turab Garip
+	https://github.com/Turab
+	License: GNU GPL v3
+ */
 
 namespace Ellibs\Elcache;
 
@@ -82,6 +87,10 @@ class FileCache {
 //(Like system cache, user specific cache etc.)
 // Context can be given during init and maybe multiple inits should be possible for this.
 // set_context() and get_context() methods for the purpose?
+
+// TODO: Make a garbage collector.
+// Store meta data of different cache files in a main cache with a special context.
+// Then watch and remove if a specific file is not being updated for a long time.
 class Cache {
 
 	private static $cache;
@@ -92,7 +101,7 @@ class Cache {
 		'default_expiry' => 3600
 	);
 
-	public static function init(?array $options = null) {
+	public static function init(?array $options = []) {
 		if (self::$cache === null) {
 			self::$options = array_merge(self::$options, $options);
 			self::$cache = new FileCache(self::$options);
@@ -100,29 +109,33 @@ class Cache {
 		self::purge_expired();
 	}
 
-	public static function get($key, $with_expiry = false) {
+	public static function get(string $key, $with_expiry = false) {
 		$cache = self::$cache->get($key);
 		if ($cache !== null) {
 			list($value, $expiry) = $cache;
 			// Return with expiry information or only the value
 			if ($expiry > time())
-				return $with_expiry ? $cache : $value;
+				return !$with_expiry ? $value : $cache;
 			// If it is expired, don't return but rather destroy
 			self::revoke($key);
 		}
-		return null;
+		return !$with_expiry ? null : [null, 0];
 	}
 
 	public static function set(string $key, $value = null, ?int $expiry = null) {
+		if ($expiry === null)
+			$expiry = self::get_option('default_expiry');
 		// Non-positive expiry or null value means revoke
 		if ($expiry < 1 || $value === null) {
 			self::revoke($key);
 			return;
 		}
-		if ($expiry === null)
-			$expiry = self::get_option('default_expiry');
 		$expiry += time();
 		self::$cache->set($key, $value, $expiry);
+	}
+	
+	public static function check(string $key, $value, $strict = false): bool {
+		return !$strict ? self::get($key) == $value : self::get($key) === $value;
 	}
 
 	public static function revoke(string $key) {
@@ -137,7 +150,7 @@ class Cache {
 		return self::$cache->purge_all($hard);
 	}
 
-	public function write($force = false) {
+	public static function write($force = false) {
 		self::$cache->write($force);
 	}
 
