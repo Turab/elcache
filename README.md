@@ -80,7 +80,7 @@ Cache::set('user', $user);
 
 You can also store serializable objects in cache but it's not recommended if you really don't need it and if you really know what to expect from the object you want to cache. Because most of the objects are not serializable and this will make error handling a pain. Needless to say you cannot cache resources. (Like handlers, streams, database connections etc.)
 
-Since you can store non-scalar values like booleans for example, you should be careful when performing checks on data. For example if a key is stored boolean `false` but it expired, it will return `null` which can evaluate to `false` or integer `0` value would evaluate to `false` and may mislead you to cause wrong behaviour in your program. In these cases, always make a strict check. Furthermore, a `null` value cannot be stored in a key since it doesn't make sense as per this behaviour and setting `null` effectively runs revoking procedure for the given key.
+Since you can store non-scalar values like booleans for example, you should be careful when performing checks on data. For example if a key is stored boolean `false` but it expired, it will return `null` which can evaluate to `false` as if the cache never expires for that key or integer `0` value would evaluate to `false` and may mislead you to cause wrong behaviour in your program. In these cases, always make a strict check. Furthermore, a `null` value cannot be stored in a key since it doesn't make sense as per this behaviour and setting `null` effectively runs revoking procedure for the given key.
 
 ### How to purge expired cache?
 
