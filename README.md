@@ -1,5 +1,5 @@
 ## What is Elcache?
-It is a very simple key-value store file cache in PHP
+It is a very simple file based key-value cache in PHP
 
 ## How to use it?
 Just include elcache.php in your project and add namespace shortcut (optional)
@@ -44,7 +44,7 @@ Cache::revoke('name'); // Now name is not cached anymore
 // Non-existent or expired keys will return null
 Cache::get('name'); // Returns the cached value if it's not expired
 
-// If you need the expiry time of the key, you can retrieve it with together with the value
+// If you need the expiry time of the key, you can retrieve it together with the value
 // This way it will return an array whose first element is the value and second is the expiry time in timestamp
 Cache::get('name', true); // Returns [value, expiretime] // Expire time is timestamp, not the remaining seconds
 ```
