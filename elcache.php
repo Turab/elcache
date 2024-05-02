@@ -2,10 +2,13 @@
 /*
 	Author: Turab Garip
 	https://github.com/Turab
+	Version: 1.0.1
 	License: GNU GPL v3
  */
 
 namespace Ellibs\Elcache;
+
+use Exception;
 
 // Maybe later make a layer and move different types of caches to other files?
 class FileCache {
@@ -14,15 +17,17 @@ class FileCache {
 	private $options;
 	private $data;
 	private $hash;
+	private $init_time;
+	private $context;
 
 	public function __construct(array $options) {
 
 		$this->options = $options;
-		$this->path = $this->options['path'] . '/elcache.php';
+		$this->init_time = microtime(true);
+		$this->path = $this->options['path'] . '/elcache.' . $this->options['context'] . '.php';
 
-		if (!is_writable($this->options['path'])) {
-			throw new \Exception('Cache path is not writable!');
-		}
+		if (!is_writable($this->options['path']))
+			throw new Exception('Cache path is not writable!');
 
 		// Create an empty cache file if it doesn't exist
 		if (!file_exists($this->path)) {
@@ -33,15 +38,20 @@ class FileCache {
 			return;
 		}
 
-		$data = file_get_contents($this->path);
-		$data = substr($data, 9, -6);
-		$this->hash = crc32($data);
-		$data = unserialize($data);
-		$this->data = is_array($data) ? $data : []; // If data is corrupt, fall back to an empty array
+		list($this->data, $this->hash) = $this->retrieve_file($this->path);
 	}
 
-	public function set(string $key, $value, int $expiry): void {
-		$this->data[$key] = array($value, $expiry);
+	private function retrieve_file($file): array {
+		$data = file_get_contents($file);
+		$data = substr($data, 9, -6);
+		$hash = crc32($data);
+		$data = unserialize($data);
+		// If data is corrupt, fall back to an empty array
+		return array(is_array($data) ? $data : [], $hash);
+	}
+
+	public function set(string $key, $value, int $ttl): void {
+		$this->data[$key] = array($value, $ttl);
 	}
 
 	public function get(?string $key = null) {
@@ -52,24 +62,36 @@ class FileCache {
 		unset($this->data[$key]);
 	}
 
+	/**
+	 * @throws Exception
+	 */
 	public function purge_expired($then_write = false): void {
 		$now = time();
 		foreach ($this->data as $key => $cache) {
-			list (, $expiry) = $cache;
-			if ($now > $expiry)
+			list (, $ttl) = $cache;
+			if ($now > $ttl)
 				$this->revoke($key);
 		}
 		if ($then_write)
 			$this->write();
 	}
 
+	/**
+	 * @throws Exception
+	 */
 	public function purge_all($hard = false): void {
 		$this->data = [];
 		$hard ? unlink($this->path) : $this->write(true);
 	}
 
 	public function write($force = false): void {
+		$size = $this->options['max_buffer'] * 1024;
 		$data = serialize($this->data);
+
+		if (strlen($data) > $size)
+			throw new Exception('Cache data is longer than it is allowed to be!
+				Either increase the allowed size or revoke keys more occasionally.');
+
 		$hash = crc32($data);
 		// Write the file only if it's forced or cache is updated
 		if ($force || $hash != $this->hash) {
@@ -78,7 +100,16 @@ class FileCache {
 		}
 	}
 
+	/**
+	 * @throws Exception
+	 */
 	public function __destruct() {
+		// Check if there were other inits that might have modified the cache
+		if (filemtime($this->path) > $this->init_time) {
+			// Re-read the file, because it is modified by another init during our runtime
+			list($addition, ) = $this->retrieve_file($this->path);
+			$this->data = array_merge($addition, $this->data);
+		}
 		$this->write();
 	}
 }
@@ -95,13 +126,20 @@ class Cache {
 
 	private static $cache;
 	private static $options = array(
-		// Path to store the cache file in
+		// Path to store the cache files in
 		'path' => '/tmp',
-		// Default expiry is 1 hour
-		'default_expiry' => 3600
+		// Default context (Each context will have its own cache file)
+		'context' => 'default',
+		// Maximum allowed size for the cache, in Kibibytes
+		'max_buffer' => 4096,
+		// Default expiry (time-to-live) is 1 hour
+		'ttl' => 3600
 	);
 
-	public static function init(?array $options = []) {
+	/**
+	 * @throws Exception
+	 */
+	public static function init(array $options = []) {
 		if (self::$cache === null) {
 			self::$options = array_merge(self::$options, $options);
 			self::$cache = new FileCache(self::$options);
@@ -109,33 +147,33 @@ class Cache {
 		self::purge_expired();
 	}
 
-	public static function get(string $key, $with_expiry = false) {
+	public static function get(string $key, $with_ttl = false) {
 		$cache = self::$cache->get($key);
 		if ($cache !== null) {
-			list($value, $expiry) = $cache;
+			list($value, $ttl) = $cache;
 			// Return with expiry information or only the value
-			if ($expiry > time())
-				return !$with_expiry ? $value : $cache;
+			if ($ttl > time())
+				return !$with_ttl ? $value : $cache;
 			// If it is expired, don't return but rather destroy
 			self::revoke($key);
 		}
-		return !$with_expiry ? null : [null, 0];
+		return !$with_ttl ? null : [null, 0];
 	}
 
-	public static function set(string $key, $value = null, ?int $expiry = null) {
-		if ($expiry === null)
-			$expiry = self::get_option('default_expiry');
-		// Non-positive expiry or null value means revoke
-		if ($expiry < 1 || $value === null) {
-			self::revoke($key);
+	public static function set(string $key, $value = null, ?int $ttl = null) {
+		if ($ttl === null)
+			$ttl = self::get_option('ttl');
+		if ($ttl > 0 && $value !== null) {
+			self::$cache->set($key, $value, $ttl + time());
 			return;
 		}
-		$expiry += time();
-		self::$cache->set($key, $value, $expiry);
+		// Non-positive expiry or null value means revoke
+		self::revoke($key);
 	}
 	
 	public static function check(string $key, $value, $strict = false): bool {
-		return !$strict ? self::get($key) == $value : self::get($key) === $value;
+		$cache = self::get($key);
+		return !$strict ? $cache == $value : $cache === $value;
 	}
 
 	public static function revoke(string $key) {
@@ -157,5 +195,10 @@ class Cache {
 	// There is no set_option() defined because options can't be changed at runtime; but only during init.
 	public static function get_option(string $option) {
 		return self::$options[$option] ?? null;
+	}
+
+	// Kill the cache handler (Maybe for reinitializing with a different context.)
+	public function close() {
+		self::$cache = null;
 	}
 }
