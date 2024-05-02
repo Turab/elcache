@@ -14,12 +14,15 @@ Then initialize it:
 ```php
 $options = array(
   'path' => '/path/to/store/the/cache/file', // Default is /tmp
-  'default_expiry' => 3600, // Default expiry in seconds. Default is 3600 (1 hour)
+  'ttl' => 3600, // Default expiry in seconds. Default is 3600 (1 hour)
+  'context' => 'default', // Each context will have its own independent cache file
+  'max_buffer' => 4096, // Maximum allowed size for the cache, in Kibibytes
 );
 
 Cache::init($options);
 ```
-Note: You can initialize the cache only once in the program. Any later calls to init() will have no effect.
+> [!IMPORTANT]
+> You can initialize the cache only once in the program. Any later calls to init() will have no effect, unless you close the cache handle with `Cache::close()` to re-initialize.
 
 Now you can store or retrieve data to and from cache like:
 
