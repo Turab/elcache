@@ -139,7 +139,7 @@ Cache::write(true);
 
 ### Is cached data dependant on session or user?
 
-No. Cached data is dependant only on the cache file and expiry time. So the cache will live through sessions of different users until it expires and as long as the cache file stays at the same place (and Cache is initialized from that same place always).
+No. Cached data is dependant only on the cache file (i.e "context") and expiry time. So the cache will live through sessions of different users until it expires and as long as the cache file stays at the same place (and Cache is initialized from that same place always).
 
 ### What happens if cache file is deleted or corrupted by another process?
 
