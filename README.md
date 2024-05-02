@@ -66,7 +66,7 @@ So if you need to prolong the cache time rather than resetting its expiry, just 
 
 ```php
 list($name, $expiry) = Cache::get('name', true);
-Cache::set('name', $name, 60 + $expiry); // Prolong the remaining cache expiry by 60 seconds.
+Cache::set('name', $name, $expiry - time() + 60); // Prolong the remaining cache ttl by 1 minute.
 ```
 
 ### Can I compare a value from the cache?
