@@ -206,6 +206,19 @@ class Cache {
     }
 
     /**
+     * Alias of set()
+     * 
+     * @param string $key
+     * @param mixed|null $value
+     * @param int|null $ttl
+     * 
+     * @return void
+     */
+    public static function store(string $key, mixed $value = null, ?int $ttl = null): void {
+        self::set($key, $value, $ttl);
+    }
+
+    /**
      * Pushes an element to a cached array.
      * If the array doesn't exist or the cached key is not an array,
      * then it will create an empty array and push this new element to it.
