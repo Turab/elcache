@@ -312,4 +312,15 @@ class Cache {
     public static function get_option(string $option): mixed {
         return self::$options[$option] ?? null;
     }
+
+    // Kill the cache handler (Maybe for reinitializing with a different context.)
+
+    /**
+     * Kills the cache handler to let re-initializing with different options (like with a different context)
+     *
+     * @return void
+     */
+    public function close(): void {
+        self::$cache = null;
+    }
 }
