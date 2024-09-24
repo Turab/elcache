@@ -53,6 +53,9 @@ Cache::push('person', 36, 'age'); // Now person is ['name' => 'John', 'age' => 3
 // Or push elements without named indexes
 Cache::push('people', 'John'); // people = ['John']
 Cache::push('people', 'Jonas'); // Now people is ['John', 'Jonas']
+// NOTE: Each pushing will reset the ttl of the whole array; not only the new element's.
+// You can set a new ttl for the whole array when pushing like:
+Cache::push('person', 'Barber', 'occupation', 300); // Now the ttl of the "person" array is reset to 5 minutes.
 
 // Get a cached value
 // Non-existent or expired keys will return null
