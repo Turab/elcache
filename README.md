@@ -27,14 +27,15 @@ Cache::init($options);
 Now you can store or retrieve data to and from cache like:
 
 ```php
-// Set value with default expiry
+// Set the value with default expiry
 Cache::set('name', 'John'); // "name" will be cached for one hour
+Cache::store('name', 'John'); // This is an alias for set()
 
-// Set value with custom expiry
+// Set the value with custom expiry
 Cache::set('surname', 'Doe', 300); // This cache will expire after 5 minutes
 
 // Setting null value for the key or setting expiry to zero or to a negative number,
-// that is effectively revoking cache of that key
+// that is effectively revoking the cache of that key
 Cache::set('name'); // These all will effectively revoke "name" from cache
 Cache::set('name', null);
 Cache::set('name', 'Dummy', 0);
@@ -42,6 +43,16 @@ Cache::set('name', 'Purgatory', -1);
 
 // Or revoke a key at will when necessary, before it expired
 Cache::revoke('name'); // Now name is not cached anymore
+
+// There is a shorthand for adding elements to an already cached array
+// This will add a name element to the person array with the value being "John".
+// If "person" array is not cached or is expired, it will cache it now.
+// This shorthand is usefull if you are caching arrays and updating their cache very often.
+Cache::push('person', 'John', 'name'); // person = ['name' => 'John']
+Cache::push('person', 36, 'age'); // Now person is ['name' => 'John', 'age' => 36]
+// Or push elements without named indexes
+Cache::push('people', 'John'); // people = ['John']
+Cache::push('people', 'Jonas'); // Now people is ['John', 'Jonas']
 
 // Get a cached value
 // Non-existent or expired keys will return null
